@@ -2,12 +2,17 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const cookieparser = require("cookie-parser");
+const cors = require('cors');
 
 const app = express();
 
 app.use(cookieparser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }))
+app.use(cors({
+    origin: "https://frontend-test-one-coral.vercel.app/",
+    methods: ['GET']
+}))
 
 require('dotenv').config()
 
