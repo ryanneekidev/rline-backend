@@ -10,7 +10,7 @@ app.use(cookieparser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }))
 app.use(cors({
-    origin: "https://frontend-test-one-coral.vercel.app",
+    origin: "https://frontend-test-git-main-ryan-neekis-projects.vercel.app",
     methods: ['GET']
 }))
 
