@@ -2,7 +2,10 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const cookieparser = require("cookie-parser");
+const bcrypt = require('bcryptjs')
 const cors = require('cors');
+const db = require("./db.js");
+const {Prisma} = require('@prisma/client');
 
 const app = express();
 
@@ -23,8 +26,10 @@ const errorMessages = {
     noPassword: "Missing password!",
     noUsernameAndPassword: "Missing username and password!",
     noUsernameOrPassword: "Missing username or password!",
-    incorrentUsername: "Incorrect username!",
-    incorrentPassword: "Incorrect password!",
+    noUsernameOrPasswordOrEmail: "Missing username, password or email!",
+    incorrectUsername: "Incorrect username!",
+    incorrectPassword: "Incorrect password!",
+    incorrectUsernameOrPassword: "Incorrect username or password",
     noAcessToken: "You are unauthorized to access this endpoint!",
     invalidAccessToken: "Your access token is invalid or has expired!",
     noRefreshToken: "No refresh token provided!",
@@ -92,7 +97,7 @@ app.post('/api/login', async (req, res) => {
     if(!user){
         return res.status(401).json(
             {
-                message: errorMessages.incorrentUsername
+                message: errorMessages.incorrectUsernameOrPassword
             }
         )
     }
@@ -100,7 +105,7 @@ app.post('/api/login', async (req, res) => {
     if(password !== user.password){
         return res.status(401).json(
             {
-                message: errorMessages.incorrentPassword
+                message: errorMessages.incorrectUsernameOrPassword
             }
         )
     }
@@ -125,12 +130,14 @@ app.post('/api/login', async (req, res) => {
         }
     )
 
+    /*
     res.cookie(`${process.env.BRAND}RefreshToken`, refreshToken, {
         httpOnly: true,
         sameSite: 'None',
         secure: true,
         maxAge: 24*60*60*1000
     })
+    */
 
     res.status(200).json(
         {
@@ -138,6 +145,53 @@ app.post('/api/login', async (req, res) => {
             token: accessToken
         }
     )
+})
+
+app.post('/api/register', async (req, res) => {
+    const username = req.body.username;
+    const password = req.body.password;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const email = req.body.email
+
+    if(!username || !password || !email){
+        return res.status(400).json(
+            {
+                message: errorMessages.noUsernameOrPasswordOrEmail
+            }
+        )
+    }
+    
+    try {
+        let usernameExists = await db.getUserByUsername(username);
+        let emailExists = await db.getUserByEmail(email);
+        if(usernameExists&&emailExists){
+            return res.status(400).json({
+                message: `Username ${username} and email address ${email} are not available`,
+            })
+        }
+        if(usernameExists){
+            return res.status(400).json({
+                message: `Username ${username} is not available`,
+            })
+        }
+        if(emailExists){
+            return res.status(400).json({
+                message: `Email address ${email} is not available`,
+            })
+        }
+        await db.createUser(username, email, hashedPassword);
+        res.status(200).json({
+            message: "User created successfully!",
+            code: 200
+        })
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            res.status(400).json({
+                message: error.message,
+                code: error.code
+            }) 
+        }
+    }
 })
 
 app.post('/api/refresh', (req, res) => {
