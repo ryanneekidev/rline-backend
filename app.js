@@ -10,7 +10,7 @@ app.use(cookieparser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }))
 app.use(cors({
-    origin: "https://frontend-test-one-coral.vercel.app",
+    origin: "*",
     methods: 'GET,POST'
 }))
 
@@ -18,16 +18,13 @@ require('dotenv').config()
 
 const PORT = process.env.PORT;
 
-const CREDS = {
-    username: 'rayan',
-    password: 'rayan'
-}
-
 const errorMessages = {
     noUsername: "Missing username!",
     noPassword: "Missing password!",
     noUsernameAndPassword: "Missing username and password!",
     noUsernameOrPassword: "Missing username or password!",
+    incorrentUsername: "Incorrect username!",
+    incorrentPassword: "Incorrect password!",
     noAcessToken: "You are unauthorized to access this endpoint!",
     invalidAccessToken: "Your access token is invalid or has expired!",
     noRefreshToken: "No refresh token provided!",
@@ -78,53 +75,69 @@ app.get("/api/private", auth, (req, res) => {
     )
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
     if(!username || !password){
-        res.status(400).json(
+        return res.status(400).json(
             {
                 message: errorMessages.noUsernameOrPassword
             }
         )
     }
 
-    if(username == CREDS.username && password == CREDS.password){
-        const accessToken = jwt.sign(
-            {
-                username: username
-            },
-            process.env.ACCESS_TOKEN_SECRET,
-            {
-                expiresIn: process.env.ACCESS_TOKEN_VALIDITY
-            }
-        )
+    const user = await db.getUserByUsername(username);
 
-        const refreshToken = jwt.sign(
+    if(!user){
+        return res.status(401).json(
             {
-                username: username
-            },
-            process.env.REFRESH_TOKEN_SECRET,
-            {
-                expiresIn: process.env.REFRESH_TOKEN_VALIDITY
-            }
-        )
-
-        res.cookie(`${process.env.BRAND}RefreshToken`, refreshToken, {
-            httpOnly: true,
-            sameSite: 'None',
-            secure: true,
-            maxAge: 24*60*60*1000
-        })
-
-        res.status(200).json(
-            {
-                message: successMessages.loginSuccess + ` (${username})`,
-                token: accessToken
+                message: errorMessages.incorrentUsername
             }
         )
     }
+
+    if(password !== user.password){
+        return res.status(401).json(
+            {
+                message: errorMessages.incorrentPassword
+            }
+        )
+    }
+    
+    const accessToken = jwt.sign(
+        {
+            username: username
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_VALIDITY
+        }
+    )
+
+    const refreshToken = jwt.sign(
+        {
+            username: username
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_VALIDITY
+        }
+    )
+
+    res.cookie(`${process.env.BRAND}RefreshToken`, refreshToken, {
+        httpOnly: true,
+        sameSite: 'None',
+        secure: true,
+        maxAge: 24*60*60*1000
+    })
+
+    res.status(200).json(
+        {
+            message: successMessages.loginSuccess + ` (${username})`,
+            token: accessToken
+        }
+    )
 })
 
 app.post('/api/refresh', (req, res) => {
