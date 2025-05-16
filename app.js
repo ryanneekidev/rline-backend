@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }))
 app.use(cors({
     origin: "https://frontend-test-one-coral.vercel.app",
-    methods: ['GET']
+    methods: 'GET'
 }))
 
 require('dotenv').config()
