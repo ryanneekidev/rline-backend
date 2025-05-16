@@ -28,7 +28,7 @@ const errorMessages = {
     noPassword: "Missing password!",
     noUsernameAndPassword: "Missing username and password!",
     noUsernameOrPassword: "Missing username or password!",
-    forbidden: "You are unauthorized to access this endpoint!",
+    noAcessToken: "You are unauthorized to access this endpoint!",
     invalidAccessToken: "Your access token is invalid or has expired!",
     noRefreshToken: "No refresh token provided!",
     invalidRefreshToken: "Your refresh token is invalid or has expired!"
@@ -45,7 +45,7 @@ const auth = async (req, res, next) => {
     if(!accessToken){
         res.status(403).json(
             {
-                message: errorMessages.forbidden
+                message: errorMessages.noAcessToken
             }
         )
     }
