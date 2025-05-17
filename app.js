@@ -33,7 +33,8 @@ const errorMessages = {
     noAcessToken: "You are unauthorized to access this endpoint!",
     invalidAccessToken: "Your access token is invalid or has expired!",
     noRefreshToken: "No refresh token provided!",
-    invalidRefreshToken: "Your refresh token is invalid or has expired!"
+    invalidRefreshToken: "Your refresh token is invalid or has expired!",
+    noAuthorizationHeader: "No authorization header provided!"
 }
 
 const successMessages = {
@@ -42,10 +43,20 @@ const successMessages = {
 }
 
 const auth = async (req, res, next) => {
-    const accessToken = req.body.token;
+    const authorizationHeader = req.headers.authorization;
+    
+    if(!authorizationHeader){
+        return res.status(403).json(
+            {
+                message: errorMessages.noAcessToken
+            }
+        )
+    }
+
+    const accessToken = authorizationHeader.split(' ')[1]
 
     if(!accessToken){
-        res.status(403).json(
+        return res.status(403).json(
             {
                 message: errorMessages.noAcessToken
             }
@@ -102,7 +113,7 @@ app.post('/api/login', async (req, res) => {
         )
     }
 
-    if(password !== user.password){
+    if(!(bcrypt.compare(username, user.username))){
         return res.status(401).json(
             {
                 message: errorMessages.incorrectUsernameOrPassword
@@ -130,14 +141,13 @@ app.post('/api/login', async (req, res) => {
         }
     )
 
-    /*
+    
     res.cookie(`${process.env.BRAND}RefreshToken`, refreshToken, {
         httpOnly: true,
         sameSite: 'None',
         secure: true,
         maxAge: 24*60*60*1000
     })
-    */
 
     res.status(200).json(
         {
@@ -150,8 +160,8 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/register', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
-    const hashedPassword = await bcrypt.hash(password, 10);
     const email = req.body.email
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     if(!username || !password || !email){
         return res.status(400).json(
@@ -169,17 +179,21 @@ app.post('/api/register', async (req, res) => {
                 message: `Username ${username} and email address ${email} are not available`,
             })
         }
+        
         if(usernameExists){
             return res.status(400).json({
                 message: `Username ${username} is not available`,
             })
         }
+        
         if(emailExists){
             return res.status(400).json({
                 message: `Email address ${email} is not available`,
             })
         }
+        
         await db.createUser(username, email, hashedPassword);
+        
         res.status(200).json({
             message: "User created successfully!",
             code: 200
@@ -189,7 +203,7 @@ app.post('/api/register', async (req, res) => {
             res.status(400).json({
                 message: error.message,
                 code: error.code
-            }) 
+            })
         }
     }
 })

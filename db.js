@@ -26,7 +26,7 @@ async function getUserByEmail(email){
         include:{
             posts: true,
             comments: true,
-            Like: true
+            like: true
         }
     })
 }
