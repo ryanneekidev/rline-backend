@@ -103,6 +103,14 @@ app.post('/api/login', async (req, res) => {
         )
     }
 
+    if(username==="" || password===""){
+        return res.status(400).json(
+            {
+                message: errorMessages.noUsernameOrPassword
+            }
+        )
+    }
+
     const user = await db.getUserByUsername(username);
 
     if(!user){
@@ -113,7 +121,7 @@ app.post('/api/login', async (req, res) => {
         )
     }
 
-    if(!(bcrypt.compare(username, user.username))){
+    if(!(await bcrypt.compare(password, user.password))){
         return res.status(401).json(
             {
                 message: errorMessages.incorrectUsernameOrPassword
@@ -141,7 +149,6 @@ app.post('/api/login', async (req, res) => {
         }
     )
 
-    
     res.cookie(`${process.env.BRAND}RefreshToken`, refreshToken, {
         httpOnly: true,
         sameSite: 'None',
@@ -193,11 +200,12 @@ app.post('/api/register', async (req, res) => {
         }
         
         await db.createUser(username, email, hashedPassword);
-        
+
         res.status(200).json({
             message: "User created successfully!",
             code: 200
         })
+
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             res.status(400).json({
