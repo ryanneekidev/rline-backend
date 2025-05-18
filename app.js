@@ -167,6 +167,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/register', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
+    const confirmedPassword = req.body.confirmedPassword;
     const email = req.body.email
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -177,6 +178,13 @@ app.post('/api/register', async (req, res) => {
             }
         )
     }
+
+    if(password!==confirmedPassword){
+        return res.status(400).json({
+            message: `Passwords do not match!`,
+            pass: false
+        })
+    }
     
     try {
         let usernameExists = await db.getUserByUsername(username);
@@ -184,18 +192,21 @@ app.post('/api/register', async (req, res) => {
         if(usernameExists&&emailExists){
             return res.status(400).json({
                 message: `Username ${username} and email address ${email} are not available`,
+                pass: false
             })
         }
         
         if(usernameExists){
             return res.status(400).json({
                 message: `Username ${username} is not available`,
+                pass: false
             })
         }
         
         if(emailExists){
             return res.status(400).json({
                 message: `Email address ${email} is not available`,
+                pass: false
             })
         }
         
@@ -203,14 +214,15 @@ app.post('/api/register', async (req, res) => {
 
         res.status(200).json({
             message: "User created successfully!",
-            code: 200
+            pass: true
         })
 
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             res.status(400).json({
                 message: error.message,
-                code: error.code
+                code: error.code,
+                pass: false
             })
         }
     }
