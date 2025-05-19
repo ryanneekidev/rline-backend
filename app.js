@@ -13,7 +13,7 @@ app.use(cookieparser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }))
 app.use(cors({
-    origin: "*",
+    origin: "https://frontend-test-one-coral.vercel.app",
     methods: 'GET,POST'
 }))
 
@@ -185,6 +185,7 @@ app.post('/api/register', async (req, res) => {
             pass: false
         })
     }
+    
     
     try {
         let usernameExists = await db.getUserByUsername(username);
