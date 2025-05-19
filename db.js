@@ -6,16 +6,20 @@ async function getUsers(){
 }
 
 async function getUserByUsername(username){
-    return await prisma.user.findUnique({
-        where:{
-            username: username
-        },
-        include:{
-            posts: true,
-            comments: true,
-            like: true
-        }
-    })
+    try {
+        return await prisma.user.findUnique({
+            where:{
+                username: username
+            },
+            include:{
+                posts: true,
+                comments: true,
+                like: true
+            }
+        })
+    } catch (err) {
+        console.error(err)
+    }
 }
 
 async function getUserByEmail(email){
