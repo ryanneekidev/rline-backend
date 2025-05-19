@@ -83,6 +83,11 @@ app.get("/api", (req, res) => {
     )
 });
 
+app.get('/api/posts', async (req, res)=>{
+    const posts = await db.getPosts();
+    res.status(200).json(posts)
+})
+
 app.get("/api/private", auth, (req, res) => {
     res.status(200).json(
         {
@@ -131,7 +136,14 @@ app.post('/api/login', async (req, res) => {
     
     const accessToken = jwt.sign(
         {
-            username: username
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            joinedAt: user.joinedAt,
+            role: user.role,
+            posts: user.posts,
+            comments: user.comments,
+            like: user.like
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
@@ -141,7 +153,14 @@ app.post('/api/login', async (req, res) => {
 
     const refreshToken = jwt.sign(
         {
-            username: username
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            joinedAt: user.joinedAt,
+            role: user.role,
+            posts: user.posts,
+            comments: user.comments,
+            like: user.like
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
@@ -227,6 +246,37 @@ app.post('/api/register', async (req, res) => {
             })
         }
     }
+})
+
+app.post('/api/posts/like', async (req, res) => {
+    let userId = req.body.userId;
+    let postId = req.body.postId;
+    await db.likePost(userId, postId);
+    res.status(200).json({
+        updatedLikes: await db.getUserLikedPosts(userId),
+        message:'Post liked successfully'
+    })
+})
+
+app.post('/api/posts/dislike', async (req, res) => {
+    let userId = req.body.userId;
+    let postId = req.body.postId;
+    let likeId = req.body.likeId;
+    await db.dislikePost(userId, postId, likeId);
+    res.status(200).json({
+        updatedLikes: await db.getUserLikedPosts(userId),
+        message:'Post disliked successfully'
+    })
+})
+
+app.post('/api/comment', async (req, res) => {
+    let userId = req.body.authorId;
+    let postId = req.body.postId;
+    let content = req.body.content;
+    await db.createComment(content, userId, postId)
+    res.status(200).json({
+        message: 'Comment created successfully'
+    })
 })
 
 app.post('/api/refresh', (req, res) => {

@@ -18,7 +18,13 @@ async function getUserByUsername(username){
             }
         })
     } catch (err) {
-        console.error(err)
+        if (err instanceof PrismaClient.PrismaClientKnownRequestError) {
+            res.status(400).json({
+                message: error.message,
+                code: error.code,
+                pass: false
+            })
+        }
     }
 }
 
@@ -110,15 +116,19 @@ async function createComment(content, userId, postId){
 }
 
 async function getPosts(){
-    return await prisma.post.findMany({
-        include:{
-            author: true,
-            comments: true
-        },
-        orderBy:{
-            createdAt: 'desc'
-        }
-    });
+    try {
+        return await prisma.post.findMany({
+            include:{
+                author: true,
+                comments: true
+            },
+            orderBy:{
+                createdAt: 'desc'
+            }
+        });
+    } catch (err) {
+        console.log(err)
+    }
 }
 
 async function getPost(postId){
