@@ -279,6 +279,26 @@ app.post('/api/comment', async (req, res) => {
     })
 })
 
+app.post('/api/posts', auth, async (req, res)=>{
+    const title = req.body.title;
+    const content = req.body.content;
+    const postStatus = req.body.postStatus;
+    const authHeaders = req.headers.authorization;
+    const token = authHeaders.split(' ')[1];
+    let user;
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+        if(err){
+            return res.status(401).json({ message: "Token is expired or invalid" });
+        }
+        user = decoded;
+    })
+    const authorId = user.id;
+    await db.createPost(title, content, authorId, postStatus);
+    res.status(200).json({
+        message:'Post created successfully'
+    })
+})
+
 app.post('/api/refresh', (req, res) => {
     const refreshToken = req.cookies.RLineRefreshToken;
 
