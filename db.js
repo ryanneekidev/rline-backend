@@ -98,6 +98,7 @@ async function dislikePost(userId, postId, likeId){
 }
 
 async function createComment(content, userId, postId){
+    console.log(content + userId + postId)
     await prisma.comment.create({
         data:{
             content: content,

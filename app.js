@@ -88,6 +88,15 @@ app.get('/api/posts', async (req, res)=>{
     res.status(200).json(posts)
 })
 
+app.post('/api/post', async (req, res)=> {
+    let postId = req.body.postId
+    const post = await db.getPost(postId)
+    res.status(200).json({
+        post: post,
+        message: 'Post retrieved successfully'
+    })
+})
+
 app.get("/api/private", auth, (req, res) => {
     res.status(200).json(
         {
@@ -270,7 +279,7 @@ app.post('/api/posts/dislike', async (req, res) => {
 })
 
 app.post('/api/comment', async (req, res) => {
-    let userId = req.body.authorId;
+    let userId = req.body.userId;
     let postId = req.body.postId;
     let content = req.body.content;
     await db.createComment(content, userId, postId)
