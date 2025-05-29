@@ -75,7 +75,7 @@ const auth = async (req, res, next) => {
     })
 }
 
-app.get("/api", (req, res) => {
+app.get("/", (req, res) => {
     res.status(200).json(
         {
             message: process.env.WELCOME_MESSAGE
@@ -83,12 +83,12 @@ app.get("/api", (req, res) => {
     )
 });
 
-app.get('/api/posts', async (req, res)=>{
+app.get('/posts', async (req, res)=>{
     const posts = await db.getPosts();
     res.status(200).json(posts)
 })
 
-app.post('/api/post', async (req, res)=> {
+app.post('/post', async (req, res)=> {
     let postId = req.body.postId
     const post = await db.getPost(postId)
     res.status(200).json({
@@ -97,7 +97,7 @@ app.post('/api/post', async (req, res)=> {
     })
 })
 
-app.get("/api/private", auth, (req, res) => {
+app.get("/private", auth, (req, res) => {
     res.status(200).json(
         {
             message: "Weclome to the private endpoint!"
@@ -105,7 +105,7 @@ app.get("/api/private", auth, (req, res) => {
     )
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/login', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
@@ -193,7 +193,7 @@ app.post('/api/login', async (req, res) => {
 })
 
 
-app.post('/api/register', async (req, res) => {
+app.post('/register', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
     const confirmedPassword = req.body.confirmedPassword;
@@ -258,7 +258,7 @@ app.post('/api/register', async (req, res) => {
     }
 })
 
-app.post('/api/posts/like', async (req, res) => {
+app.post('/posts/like', async (req, res) => {
     let userId = req.body.userId;
     let postId = req.body.postId;
     await db.likePost(userId, postId);
@@ -268,7 +268,7 @@ app.post('/api/posts/like', async (req, res) => {
     })
 })
 
-app.post('/api/posts/dislike', async (req, res) => {
+app.post('/posts/dislike', async (req, res) => {
     let userId = req.body.userId;
     let postId = req.body.postId;
     let likeId = req.body.likeId;
@@ -279,7 +279,7 @@ app.post('/api/posts/dislike', async (req, res) => {
     })
 })
 
-app.post('/api/comment', async (req, res) => {
+app.post('/comment', async (req, res) => {
     let userId = req.body.userId;
     let postId = req.body.postId;
     let content = req.body.content;
@@ -289,7 +289,7 @@ app.post('/api/comment', async (req, res) => {
     })
 })
 
-app.post('/api/posts', auth, async (req, res)=>{
+app.post('/posts', auth, async (req, res)=>{
     const title = req.body.title;
     const content = req.body.content;
     const postStatus = req.body.postStatus;
@@ -309,7 +309,7 @@ app.post('/api/posts', auth, async (req, res)=>{
     })
 })
 
-app.post('/api/refresh', (req, res) => {
+app.post('/refresh', (req, res) => {
     const refreshToken = req.cookies.RLineRefreshToken;
 
     if (!refreshToken) {
