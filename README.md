@@ -6,7 +6,34 @@ RLine is a practice project to practice building full stack application end to e
 It currently serves as a small and barebones social media application that allows users to create accounts with their email address, post text messages which are visible to other users who can interact with them.
 The name is inspired by "Line", a popular text messenger in Japan and South Korea. It's a combination of Line and the first letter of my name.
 
-# API documentation
+## Notes
+
+- All responses are in JSON format.
+- Errors generally return a JSON object with a `message` field describing the error.
+- Protected endpoints require a valid JWT access token in the `Authorization` header.
+- The refresh endpoint requires a valid refresh token cookie.
+- For more details about data structure, see the code or database models.
+
+## Skills & Techniques Demonstrated
+
+- **Node.js & Express.js**: Designed and implemented RESTful APIs using Express, with modular routing and middleware.
+- **Authentication & Authorization**: Secured endpoints using JWT-based authentication, HTTP-only cookies for refresh tokens, and protected route patterns.
+- **Database Management with Prisma**: Modeled relational data and performed database operations using Prisma ORM, including migrations and schema management.
+- **User Management**: Implemented secure user registration and login with password hashing (bcryptjs) and validation.
+- **API Design**: Developed clear, versioned API endpoints with consistent JSON responses, error handling, and documentation.
+- **Social Media Features**: Built core social app functionalities including posting, liking, commenting, and feed retrieval.
+- **Secure Coding Practices**: Employed input validation, error handling, and secure token storage strategies.
+- **Token Refresh Workflow**: Implemented refresh token endpoint for seamless session management and improved user experience.
+- **Hosting & Deployment**: Deployed backend on a public server with live API endpoints.
+- **Collaborative Documentation**: Maintained detailed API documentation for ease of use by frontend developers and third parties.
+- **Environment Variable Management**: Used environment variables for sensitive configuration and deployment flexibility.
+- **Modern JavaScript Best Practices**: Used ES6+ syntax, async/await, and modular code organization.
+
+---
+
+Feel free to customize or expand this list according to additional features or libraries you may have added!
+
+## API documentation
 
 ### Authentication
 
@@ -247,11 +274,3 @@ Refresh the access token using the HTTP-only refresh token cookie.
 - `400/403` on error.
 
 ---
-
-## Notes
-
-- All responses are in JSON format.
-- Errors generally return a JSON object with a `message` field describing the error.
-- Protected endpoints require a valid JWT access token in the `Authorization` header.
-- The refresh endpoint requires a valid refresh token cookie.
-- For more details about data structure, see the code or database models.
