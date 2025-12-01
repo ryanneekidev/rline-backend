@@ -168,9 +168,11 @@ app.post('/login', async (req, res) => {
             email: user.email,
             joinedAt: user.joinedAt,
             role: user.role,
+            /*
             posts: user.posts,
             comments: user.comments,
             like: user.like
+            */
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
@@ -185,9 +187,11 @@ app.post('/login', async (req, res) => {
             email: user.email,
             joinedAt: user.joinedAt,
             role: user.role,
+            /*
             posts: user.posts,
             comments: user.comments,
             like: user.like
+            */
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
