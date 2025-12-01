@@ -13,8 +13,8 @@ app.use(cookieparser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }))
 app.use(cors({
-    origin: "*",
-    methods: 'GET,POST'
+    origin: "https://rline.ryanneeki.xyz",
+    methods: 'GET,POST,OPTIONS'
 }))
 
 require('dotenv').config()
@@ -346,6 +346,6 @@ app.post('/refresh', (req, res) => {
     })
 })
 
-app.listen(PORT, (req, res) => {
+app.listen(4000, (req, res) => {
     console.log(`Server started and listening for requests at ${PORT}`)
 })
