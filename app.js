@@ -7,18 +7,20 @@ const cors = require('cors');
 const db = require("./db.js");
 const {Prisma} = require('@prisma/client');
 
+require('dotenv').config()
+
 const app = express();
+
+app.use(cors({
+    origin: "https://rline.ryanneeki.xyz",
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}))
 
 app.use(cookieparser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }))
-app.use(cors({
-    origin: "https://rline.ryanneeki.xyz",
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}))
-
-require('dotenv').config()
 
 const PORT = process.env.PORT;
 
