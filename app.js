@@ -81,7 +81,7 @@ const auth = async (req, res, next) => {
         )
     }
 
-    jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if(err){
             return res.status(403).json(
                 {
