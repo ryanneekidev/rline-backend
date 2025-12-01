@@ -15,8 +15,7 @@ app.use(express.urlencoded({ extended: false }))
 app.use(cors({
     origin: "https://rline.ryanneeki.xyz",
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }))
 app.options('*', cors())
 
