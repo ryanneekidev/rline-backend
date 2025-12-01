@@ -199,6 +199,8 @@ app.post('/login', async (req, res) => {
         httpOnly: true,
         sameSite: 'None',
         secure: true,
+        domain: '.rline.ryanneeki.xyz',
+        path: '/',
         maxAge: 24*60*60*1000
     })
 
