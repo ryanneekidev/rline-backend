@@ -15,7 +15,8 @@ app.use(express.urlencoded({ extended: false }))
 app.use(cors({
     origin: "https://rline.ryanneeki.xyz",
     credentials: true,
-    methods: 'GET,POST,OPTIONS'
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
 require('dotenv').config()
