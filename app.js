@@ -315,6 +315,7 @@ app.post('/comment', async (req, res) => {
 })
 
 app.post('/posts', auth, async (req, res)=>{
+    /*
     const title = req.body.title;
     const content = req.body.content;
     const postStatus = req.body.postStatus;
@@ -332,6 +333,21 @@ app.post('/posts', auth, async (req, res)=>{
     res.status(200).json({
         message:'Post created successfully'
     })
+    */
+    try {
+        const { title, content, postStatus } = req.body;
+        const authorId = req.user.id;
+        
+        await db.createPost(title, content, authorId, postStatus);
+        res.status(201).json({
+            message: 'Post created successfully'
+        })
+    } catch (error) {
+        console.error('Error creating post:', error)
+        res.status(500).json({
+            message: 'Failed to create post'
+        })
+    }
 })
 
 app.post('/refresh', (req, res) => {
