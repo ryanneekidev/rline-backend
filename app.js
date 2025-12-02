@@ -7,6 +7,8 @@ const cors = require('cors');
 const db = require("./db.js");
 const {Prisma} = require('@prisma/client');
 
+const isDev = process.env.NODE_ENV === 'development';
+
 require('dotenv').config()
 
 const app = express();
