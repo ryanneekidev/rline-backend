@@ -21,10 +21,19 @@ app.use(cors({
 */
 
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://rline.ryanneeki.xyz')
-    res.header('Access-Control-Allow-Credentials', 'true')
-    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+
+    const allowedOrigins = isDev 
+            ? ['http://localhost:3000', 'https://rline.ryanneeki.xyz']
+            : ['https://rline.ryanneeki.xyz'];
+
+    const origin = req.headers.origin;
+
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    }
     
     if (req.method === 'OPTIONS') {
         return res.status(200).end()
@@ -387,7 +396,10 @@ app.post('/refresh', (req, res) => {
         const accessToken = jwt.sign(
             {
                 id: user.id,
-                username: user.username
+                username: user.username,
+                email: user.email,
+                joinedAt: user.joinedAt,
+                role: user.role,
             },
             process.env.ACCESS_TOKEN_SECRET,
             {
@@ -402,6 +414,6 @@ app.post('/refresh', (req, res) => {
     })
 })
 
-app.listen(process.env.PORT || 3000, (req, res) => {
+app.listen(process.env.PORT || 4000, (req, res) => {
     console.log(`Server started and listening for requests at ${PORT}`)
 })
