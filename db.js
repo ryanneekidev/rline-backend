@@ -64,37 +64,41 @@ async function getUserLikedPosts(userId){
 }
 
 async function likePost(userId, postId){
-    const like = await prisma.like.create({
-        data:{
-            userId: userId,
-            postId: postId
-        }
-    })
-    await prisma.post.update({
-        where:{
-            id: postId
-        },
-        data:{
-            likes: {increment: 1}
-        }
-    })
+    const [like] = await prisma.$transaction([
+        prisma.like.create({
+            data: {
+                userId: userId,
+                postId: postId
+            }
+        }),
+        prisma.post.update({
+            where: {
+                id: postId
+            },
+            data: {
+                likes: { increment: 1 }
+            }
+        })
+    ])
     return like;
 }
 
 async function dislikePost(userId, postId, likeId){
-    await prisma.like.delete({
-        where:{
-            id: likeId
-        }
-    })
-    await prisma.post.update({
-        where:{
-            id: postId
-        },
-        data:{
-            likes: {decrement: 1}
-        }
-    })
+    await prisma.$transaction([
+        prisma.like.delete({
+            where: {
+                id: likeId
+            }
+        }),
+        prisma.post.update({
+            where: {
+                id: postId
+            },
+            data: {
+                likes: { decrement: 1 }
+            }
+        })
+    ])
 }
 
 async function createComment(content, userId, postId){

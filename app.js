@@ -284,24 +284,38 @@ app.post('/register', async (req, res) => {
 })
 
 app.post('/posts/like', async (req, res) => {
-    let userId = req.body.userId;
-    let postId = req.body.postId;
-    await db.likePost(userId, postId);
-    res.status(200).json({
-        updatedLikes: await db.getUserLikedPosts(userId),
-        message:'Post liked successfully'
-    })
+    try {
+        let userId = req.body.userId;
+        let postId = req.body.postId;
+        
+        const like = await db.likePost(userId, postId);
+        
+        // Only return the new like record, not all user likes
+        res.status(200).json({
+            like: like,
+            message: 'Post liked successfully'
+        })
+    } catch (error) {
+        console.error('Error liking post:', error)
+        res.status(500).json({ message: 'Failed to like post' })
+    }
 })
 
 app.post('/posts/dislike', async (req, res) => {
-    let userId = req.body.userId;
-    let postId = req.body.postId;
-    let likeId = req.body.likeId;
-    await db.dislikePost(userId, postId, likeId);
-    res.status(200).json({
-        updatedLikes: await db.getUserLikedPosts(userId),
-        message:'Post disliked successfully'
-    })
+    try {
+        let userId = req.body.userId;
+        let postId = req.body.postId;
+        let likeId = req.body.likeId;
+        
+        await db.dislikePost(userId, postId, likeId);
+        
+        res.status(200).json({
+            message: 'Post disliked successfully'
+        })
+    } catch (error) {
+        console.error('Error disliking post:', error)
+        res.status(500).json({ message: 'Failed to dislike post' })
+    }
 })
 
 app.post('/comment', async (req, res) => {
