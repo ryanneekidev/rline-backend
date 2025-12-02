@@ -8,15 +8,18 @@ datasource db {
 }
 
 model User {
-  id       String    @id @default(uuid())
-  username String    @unique
-  email    String    @unique
-  password String
-  role     Role      @default(USER)
-  joinedAt DateTime  @default(now())
-  posts    Post[]
-  comments Comment[]
-  like     Like[]
+  id        String    @id @default(uuid())
+  username  String    @unique
+  email     String    @unique
+  password  String
+  role      Role      @default(USER)
+  joinedAt  DateTime  @default(now())
+  posts     Post[]
+  comments  Comment[]
+  like      Like[]
+  followers Follow[]  @relation("Following") // People who follow ME
+  following Follow[]  @relation("Follower") // People I follow
+  follows   Follow[]
 }
 
 model Post {
@@ -49,6 +52,21 @@ model Like {
   post      Post     @relation(fields: [postId], references: [id])
   postId    String
   createdAt DateTime @default(now())
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId  String
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      String?
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }
 
 enum Role {
