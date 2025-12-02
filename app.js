@@ -418,6 +418,92 @@ app.post('/refresh', (req, res) => {
     })
 })
 
+// Follow a user
+app.post('/users/follow', auth, async (req, res) => {
+    try {
+        const followerId = req.user.id;
+        const followingId = req.body.followingId;
+
+        if (followerId === followingId) {
+            return res.status(400).json({ message: "You cannot follow yourself" });
+        }
+
+        const follow = await db.followUser(followerId, followingId);
+        res.status(200).json({
+            follow: follow,
+            message: 'User followed successfully'
+        });
+    } catch (error) {
+        console.error('Error following user:', error);
+        res.status(500).json({ message: 'Failed to follow user' });
+    }
+});
+
+// Unfollow a user
+app.post('/users/unfollow', auth, async (req, res) => {
+    try {
+        const followerId = req.user.id;
+        const followingId = req.body.followingId;
+
+        await db.unfollowUser(followerId, followingId);
+        res.status(200).json({
+            message: 'User unfollowed successfully'
+        });
+    } catch (error) {
+        console.error('Error unfollowing user:', error);
+        res.status(500).json({ message: 'Failed to unfollow user' });
+    }
+});
+
+// Get followers of a user
+app.get('/users/:userId/followers', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const followers = await db.getFollowers(userId);
+        res.status(200).json({ followers });
+    } catch (error) {
+        console.error('Error getting followers:', error);
+        res.status(500).json({ message: 'Failed to get followers' });
+    }
+});
+
+// Get following of a user
+app.get('/users/:userId/following', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const following = await db.getFollowing(userId);
+        res.status(200).json({ following });
+    } catch (error) {
+        console.error('Error getting following:', error);
+        res.status(500).json({ message: 'Failed to get following' });
+    }
+});
+
+// Check if current user follows another user
+app.get('/users/:userId/is-following', auth, async (req, res) => {
+    try {
+        const followerId = req.user.id;
+        const followingId = req.params.userId;
+        const isFollowing = await db.isFollowing(followerId, followingId);
+        res.status(200).json({ isFollowing });
+    } catch (error) {
+        console.error('Error checking follow status:', error);
+        res.status(500).json({ message: 'Failed to check follow status' });
+    }
+});
+
+// Get follower/following counts
+app.get('/users/:userId/follow-counts', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const counts = await db.getFollowCounts(userId);
+        res.status(200).json(counts);
+    } catch (error) {
+        console.error('Error getting follow counts:', error);
+        res.status(500).json({ message: 'Failed to get follow counts' });
+    }
+});
+
 app.listen(process.env.PORT || 4000, (req, res) => {
     console.log(`Server started and listening for requests at ${PORT}`)
 })

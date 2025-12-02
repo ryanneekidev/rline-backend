@@ -1,17 +1,17 @@
-const {PrismaClient} = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function getUsers(){
+async function getUsers() {
     return await prisma.user.findMany()
 }
 
-async function getUserByUsername(username){
+async function getUserByUsername(username) {
     try {
         return await prisma.user.findUnique({
-            where:{
+            where: {
                 username: username
             },
-            include:{
+            include: {
                 posts: true,
                 comments: true,
                 like: true
@@ -28,12 +28,12 @@ async function getUserByUsername(username){
     }
 }
 
-async function getUserByEmail(email){
+async function getUserByEmail(email) {
     return await prisma.user.findUnique({
-        where:{
+        where: {
             email: email
         },
-        include:{
+        include: {
             posts: true,
             comments: true,
             like: true
@@ -41,9 +41,9 @@ async function getUserByEmail(email){
     })
 }
 
-async function createUser(username, email, password){
+async function createUser(username, email, password) {
     await prisma.user.create({
-        data:{
+        data: {
             username: username,
             email: email,
             password: password
@@ -51,19 +51,19 @@ async function createUser(username, email, password){
     })
 }
 
-async function getUserLikedPosts(userId){
+async function getUserLikedPosts(userId) {
     const user = await prisma.user.findUnique({
-        where:{
+        where: {
             id: userId
         },
-        select:{
+        select: {
             like: true
         }
     })
     return user.like
 }
 
-async function likePost(userId, postId){
+async function likePost(userId, postId) {
     const [like] = await prisma.$transaction([
         prisma.like.create({
             data: {
@@ -83,7 +83,7 @@ async function likePost(userId, postId){
     return like;
 }
 
-async function dislikePost(userId, postId, likeId){
+async function dislikePost(userId, postId, likeId) {
     await prisma.$transaction([
         prisma.like.delete({
             where: {
@@ -101,18 +101,18 @@ async function dislikePost(userId, postId, likeId){
     ])
 }
 
-async function createComment(content, userId, postId){
+async function createComment(content, userId, postId) {
     console.log(content + userId + postId)
     await prisma.comment.create({
-        data:{
+        data: {
             content: content,
-            author:{
-                connect:{
+            author: {
+                connect: {
                     id: userId
                 }
             },
-            parentPost:{
-                connect:{
+            parentPost: {
+                connect: {
                     id: postId
                 }
             }
@@ -120,14 +120,14 @@ async function createComment(content, userId, postId){
     })
 }
 
-async function getPosts(){
+async function getPosts() {
     try {
         return await prisma.post.findMany({
-            include:{
+            include: {
                 author: true,
                 comments: true
             },
-            orderBy:{
+            orderBy: {
                 createdAt: 'desc'
             }
         });
@@ -136,15 +136,15 @@ async function getPosts(){
     }
 }
 
-async function getPost(postId){
+async function getPost(postId) {
     return await prisma.post.findUnique({
-        where:{
+        where: {
             id: postId
         },
-        include:{
+        include: {
             author: true,
             comments: {
-                include:{
+                include: {
                     author: true,
                     parentPost: true
                 }
@@ -153,13 +153,13 @@ async function getPost(postId){
     });
 }
 
-async function createPost(title, content, authorId, postStatus){
+async function createPost(title, content, authorId, postStatus) {
     await prisma.post.create({
-        data:{
+        data: {
             title: title,
             content: content,
-            author:{
-                connect:{
+            author: {
+                connect: {
                     id: authorId
                 }
             },
@@ -168,9 +168,88 @@ async function createPost(title, content, authorId, postStatus){
     })
 }
 
+async function followUser(followerId, followingId) {
+    const follow = await prisma.follow.create({
+        data: {
+            followerId: followerId,
+            followingId: followingId
+        }
+    })
+    return follow;
+}
 
+async function unfollowUser(followerId, followingId) {
+    await prisma.follow.delete({
+        where: {
+            followerId_followingId: {
+                followerId: followerId,
+                followingId: followingId
+            }
+        }
+    })
+}
 
-module.exports={
+// Get followers of a user (people who follow them)
+async function getFollowers(userId) {
+    const followers = await prisma.follow.findMany({
+        where: {
+            followingId: userId
+        },
+        include: {
+            follower: {
+                select: {
+                    id: true,
+                    username: true,
+                    email: true
+                }
+            }
+        }
+    })
+    return followers.map(f => f.follower);
+}
+
+// Get following of a user (people they follow)
+async function getFollowing(userId) {
+    const following = await prisma.follow.findMany({
+        where: {
+            followerId: userId
+        },
+        include: {
+            following: {
+                select: {
+                    id: true,
+                    username: true,
+                    email: true
+                }
+            }
+        }
+    })
+    return following.map(f => f.following);
+}
+
+// Check if a user is following another user
+async function isFollowing(followerId, followingId) {
+    const follow = await prisma.follow.findUnique({
+        where: {
+            followerId_followingId: {
+                followerId: followerId,
+                followingId: followingId
+            }
+        }
+    })
+    return follow !== null;
+}
+
+// Get follower/following counts
+async function getFollowCounts(userId) {
+    const [followersCount, followingCount] = await Promise.all([
+        prisma.follow.count({ where: { followingId: userId } }),
+        prisma.follow.count({ where: { followerId: userId } })
+    ])
+    return { followersCount, followingCount };
+}
+
+module.exports = {
     getUsers,
     getUserByUsername,
     getUserByEmail,
@@ -181,5 +260,11 @@ module.exports={
     dislikePost,
     getUserLikedPosts,
     createComment,
-    getPost
+    getPost,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
+    isFollowing,
+    getFollowCounts
 }
