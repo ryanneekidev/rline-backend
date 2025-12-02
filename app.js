@@ -118,6 +118,17 @@ app.get('/posts', async (req, res) => {
     res.status(200).json(posts)
 })
 
+app.get('/users/:userId/likes', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const likes = await db.getUserLikedPosts(userId);
+        res.status(200).json({ likes });
+    } catch (error) {
+        console.error('Error fetching user likes:', error);
+        res.status(500).json({ message: 'Failed to fetch user likes' });
+    }
+});
+
 app.post('/post', async (req, res) => {
     let postId = req.body.postId
     const post = await db.getPost(postId)
