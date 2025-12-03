@@ -515,6 +515,25 @@ app.get('/users/:userId/follow-counts', async (req, res) => {
     }
 });
 
+// Get user by username
+app.get('/users/username/:username', async (req, res) => {
+    try {
+        const username = req.params.username;
+        const user = await db.getUserByUsername(username);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Don't send password
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json({ user: userWithoutPassword });
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({ message: 'Failed to fetch user' });
+    }
+});
+
 app.listen(process.env.PORT || 4000, (req, res) => {
     console.log(`Server started and listening for requests at ${PORT}`)
 })
