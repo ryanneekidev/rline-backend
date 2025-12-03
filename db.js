@@ -142,7 +142,13 @@ async function getPost(postId) {
             id: postId
         },
         include: {
-            author: true,
+            author: {
+                select: {
+                    id: true,
+                    username: true,
+                    email: true
+                }
+            },
             comments: {
                 include: {
                     author: true,
