@@ -255,6 +255,14 @@ async function getFollowCounts(userId) {
     return { followersCount, followingCount };
 }
 
+async function countUserPosts(userId) {
+    return await prisma.post.count({
+        where: {
+            authorId: userId
+        }
+    });
+}
+
 module.exports = {
     getUsers,
     getUserByUsername,
@@ -272,5 +280,6 @@ module.exports = {
     getFollowers,
     getFollowing,
     isFollowing,
-    getFollowCounts
+    getFollowCounts,
+    countUserPosts,
 }

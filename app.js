@@ -534,6 +534,17 @@ app.get('/users/username/:username', async (req, res) => {
     }
 });
 
+app.get('/users/:userId/posts/count', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const count = await db.countUserPosts(userId);
+        res.status(200).json({ count });
+    } catch (error) {
+        console.error('Error counting posts:', error);
+        res.status(500).json({ message: 'Failed to count posts' });
+    }
+});
+
 app.listen(process.env.PORT || 4000, (req, res) => {
     console.log(`Server started and listening for requests at ${PORT}`)
 })
