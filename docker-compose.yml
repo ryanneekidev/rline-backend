@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rline-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rline
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: rline-backend
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/rline
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+    command: sh -c "npx prisma migrate deploy && node src/app.js"
+
+volumes:
+  postgres_data:

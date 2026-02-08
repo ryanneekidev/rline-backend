@@ -5,8 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npm install",
-    "start": "node app.js",
-    "dev": "nodemon app.js",
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
     "seed": "npx prisma migrate deploy",
     "devseed": "npx prisma migrate dev"
   },
