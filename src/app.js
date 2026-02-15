@@ -7,7 +7,9 @@ const cors = require("cors");
 const db = require("./db.js");
 const { Prisma } = require("@prisma/client");
 const { successMessages, errorMessages } = require("./utils/messages.js");
-import { auth } from "./middleware/auth.js";
+const auth = require("./middleware/auth.js");
+const authenticationRouter = require("./routers/authentication/authentication.route.js");
+
 
 dotenv.config();
 
@@ -32,6 +34,12 @@ app.use(express.urlencoded({ extended: false }));
 
 const PORT = process.env.PORT;
 
+/* BEGIN REFACTORING */
+
+app.use("/auth", authenticationRouter);
+
+/* END REFACTORING */
+
 app.get("/", (req, res) => {
 	res.status(200).json(
 		{
@@ -45,119 +53,7 @@ app.get("/posts", async (req, res) => {
 	res.status(200).json(posts)
 });
 
-app.get("/users/:userId/likes", async (req, res) => {
-	try {
-		const userId = req.params.userId;
-		const likes = await db.getUserLikedPosts(userId);
-		res.status(200).json(likes)
-	} catch (error) {
-		console.error("Error fetching user likes:", error);
-		res.status(500).json(
-			{ 
-				message: "Failed to fetch user likes"
-			}
-		)
-	}
-});
-
-app.post("/post", async (req, res) => {
-	let postId = req.body.postId;
-	const post = await db.getPost(postId);
-	res.status(200).json(
-		{
-			post: post,
-			message: "Post retrieved successfully"
-		}
-	)
-});
-
-app.post("/login", async (req, res) => {
-	const username = req.body.username;
-	const password = req.body.password;
-
-	if (!username || !password) {
-		return res.status(400).json(
-			{
-				message: errorMessages.noUsernameOrPassword
-			}
-		);
-	}
-
-	if (username === "" || password === "") {
-		return res.status(400).json(
-			{
-				message: errorMessages.noUsernameOrPassword
-			}
-		);
-	}
-
-	const user = await db.getUserByUsername(username);
-	const likes = await db.getUserLikedPosts(user.id);
-
-  	if (!user) {
-		return res.status(401).json(
-			{
-				message: errorMessages.incorrectUsernameOrPassword
-			}
-		);
-  	}
-
-	if (!(await bcrypt.compare(password, user.password))) {
-		return res.status(401).json(
-			{
-				message: errorMessages.incorrectUsernameOrPassword
-			}
-		);
-	}
-
-  	const accessToken = jwt.sign(
-		{
-			id: user.id,
-			username: user.username,
-			email: user.email,
-			joinedAt: user.joinedAt,
-			role: user.role
-		},
-		process.env.ACCESS_TOKEN_SECRET,
-		{
-			expiresIn: process.env.ACCESS_TOKEN_VALIDITY,
-		}
-  	);
-
-  	const refreshToken = jwt.sign(
-		{
-			id: user.id,
-			username: user.username,
-			email: user.email,
-			joinedAt: user.joinedAt,
-			role: user.role
-		},
-		process.env.REFRESH_TOKEN_SECRET,
-		{
-			expiresIn: process.env.REFRESH_TOKEN_VALIDITY
-		}
-  	);
-
-  	res.cookie(
-		`${process.env.BRAND}RefreshToken`, 
-		refreshToken, 
-		{
-			httpOnly: true,
-			sameSite: "None",
-			secure: isDev ? true : false,
-			domain: ".rline.ryanneeki.xyz",
-			path: "/",
-			maxAge: 24 * 60 * 60 * 1000
-		}
-	);
-
-	res.status(200).json({
-		message: successMessages.loginSuccess + ` (${username})`,
-		token: accessToken,
-		likes: likes
-	});
-});
-
+/*
 app.post("/register", async (req, res) => {
 	const username = req.body.username;
 	const password = req.body.password;
@@ -231,6 +127,33 @@ app.post("/register", async (req, res) => {
 			);
 		}
   	}
+});
+*/
+
+app.get("/users/:userId/likes", async (req, res) => {
+	try {
+		const userId = req.params.userId;
+		const likes = await db.getUserLikedPosts(userId);
+		res.status(200).json(likes)
+	} catch (error) {
+		console.error("Error fetching user likes:", error);
+		res.status(500).json(
+			{ 
+				message: "Failed to fetch user likes"
+			}
+		)
+	}
+});
+
+app.post("/post", async (req, res) => {
+	let postId = req.body.postId;
+	const post = await db.getPost(postId);
+	res.status(200).json(
+		{
+			post: post,
+			message: "Post retrieved successfully"
+		}
+	)
 });
 
 app.post("/posts/like", async (req, res) => {

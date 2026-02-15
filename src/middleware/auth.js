@@ -1,4 +1,4 @@
-export const auth = async (req, res, next) => {
+const auth = async (req, res, next) => {
 	const authorizationHeader = req.headers.authorization;
 
 	if (!authorizationHeader) {
@@ -25,3 +25,5 @@ export const auth = async (req, res, next) => {
 		next();
 	});
 };
+
+module.exports = auth;
