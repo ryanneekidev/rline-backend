@@ -1,5 +1,5 @@
 const { successMessages, errorMessages } = require("../../utils/messages.js");
-const db = require("../../db");
+const userRespository = require("../../repositories/user/user.repository.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -20,8 +20,8 @@ const login = async (username, password) => {
 		)
 	}
 
-	const user = await db.getUserByUsername(username);
-	const likes = await db.getUserLikedPosts(user.id);
+	const user = await userRespository.getUserByUsername(username);
+	const likes = await userRespository.getUserLikedPosts(user.id);
 
   	if (!user) {
 		return (
@@ -76,4 +76,74 @@ const login = async (username, password) => {
     }
 };
 
-module.exports  = { login };
+const register = async (username, password, confirmedPassword, email) => {
+	const hashedPassword = await bcrypt.hash(password, 10);
+
+	if (!username || !password || !email) {
+		return (
+			{
+				message: errorMessages.noUsernameOrPasswordOrEmail,
+				pass: false
+			}
+		)
+	}
+
+	if (password !== confirmedPassword) {
+		return (
+			{
+				message: `Passwords do not match!`,
+				pass: false
+			}
+		);
+	}
+
+  	try {
+		let usernameExists = await userRespository.getUserByUsername(username);
+		let emailExists = await userRespository.getUserByEmail(email);
+		if (usernameExists && emailExists) {
+			return (
+				{
+					message: `Username ${username} and email address ${email} are not available`,
+					pass: false
+				}
+			);
+		}
+
+		if (usernameExists) {
+			return (
+				{
+					message: `Username ${username} is not available`,
+					pass: false
+				}
+			);
+		}
+
+		if (emailExists) {
+			return (
+				{
+					message: `Email address ${email} is not available`,
+					pass: false
+				}
+			);
+		}
+
+		await userRespository.createUser(username, email, hashedPassword);
+
+		return {
+			message: "User created successfully!",
+			pass: true
+		}
+  	} catch (error) {
+		if (error instanceof Prisma.PrismaClientKnownRequestError) {
+			return (
+				{
+					message: error.message,
+					code: error.code,
+					pass: false
+				}
+			);
+		}
+  	}
+};
+
+module.exports  = { login, register };
