@@ -7,6 +7,7 @@ const cors = require("cors");
 const db = require("./db.js");
 const { Prisma } = require("@prisma/client");
 const { successMessages, errorMessages } = require("./utils/messages.js");
+import { auth } from "./middleware/auth.js";
 
 dotenv.config();
 
@@ -24,66 +25,38 @@ app.use(
 			allowedHeaders: ['Content-Type', 'Authorization']
 		}
 	)
-)
+);
 app.use(cookieparser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 const PORT = process.env.PORT;
 
-const auth = async (req, res, next) => {
-  const authorizationHeader = req.headers.authorization;
-
-  if (!authorizationHeader) {
-	return res.status(403).json({
-	  message: errorMessages.noAcessToken,
-	});
-  }
-
-  const accessToken = authorizationHeader.split(" ")[1];
-
-  if (!accessToken) {
-	return res.status(403).json({
-	  message: errorMessages.noAcessToken,
-	});
-  }
-
-  jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-	if (err) {
-	  return res.status(403).json({
-		message: errorMessages.invalidAccessToken,
-	  });
-	}
-	req.user = decoded;
-	next();
-  });
-};
-
 app.get("/", (req, res) => {
 	res.status(200).json(
 		{
 			message: process.env.WELCOME_MESSAGE
 		}
-	);
+	)
 });
 
 app.get("/posts", async (req, res) => {
 	const posts = await db.getPosts();
-	res.status(200).json(posts);
+	res.status(200).json(posts)
 });
 
 app.get("/users/:userId/likes", async (req, res) => {
 	try {
 		const userId = req.params.userId;
 		const likes = await db.getUserLikedPosts(userId);
-		res.status(200).json(likes);
+		res.status(200).json(likes)
 	} catch (error) {
 		console.error("Error fetching user likes:", error);
 		res.status(500).json(
 			{ 
 				message: "Failed to fetch user likes"
 			}
-		);
+		)
 	}
 });
 
@@ -95,7 +68,7 @@ app.post("/post", async (req, res) => {
 			post: post,
 			message: "Post retrieved successfully"
 		}
-	);
+	)
 });
 
 app.post("/login", async (req, res) => {
@@ -319,25 +292,6 @@ app.post("/comment", async (req, res) => {
 });
 
 app.post("/posts", auth, async (req, res) => {
-  /*
-	const title = req.body.title;
-	const content = req.body.content;
-	const postStatus = req.body.postStatus;
-	const authHeaders = req.headers.authorization;
-	const token = authHeaders.split(' ')[1];
-	let user;
-	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
-		if(err){
-			return res.status(401).json({ message: "Token is expired or invalid" });
-		}
-		user = decoded;
-	})
-	const authorId = user.id;
-	await db.createPost(title, content, authorId, postStatus);
-	res.status(200).json({
-		message:'Post created successfully'
-	})
-	*/
 	try {
 		const { title, content, postStatus } = req.body;
 		const authorId = req.user.id;
@@ -354,7 +308,7 @@ app.post("/posts", auth, async (req, res) => {
 			{
 				message: "Failed to create post"
 			}
-		);
+		)
 	}
 });
 
