@@ -9,6 +9,7 @@ const { Prisma } = require("@prisma/client");
 const { successMessages, errorMessages } = require("./utils/messages.js");
 const auth = require("./middleware/auth.js");
 const authenticationRouter = require("./routers/authentication/authentication.route.js");
+const postsRouter = require("./routers/posts/posts.route.js");
 
 
 dotenv.config();
@@ -37,6 +38,7 @@ const PORT = process.env.PORT;
 /* BEGIN REFACTORING */
 
 app.use("/auth", authenticationRouter);
+app.use("/posts", postsRouter);
 
 /* END REFACTORING */
 
@@ -46,11 +48,6 @@ app.get("/", (req, res) => {
 			message: process.env.WELCOME_MESSAGE
 		}
 	)
-});
-
-app.get("/posts", async (req, res) => {
-	const posts = await db.getPosts();
-	res.status(200).json(posts)
 });
 
 app.get("/users/:userId/likes", async (req, res) => {
@@ -68,7 +65,7 @@ app.get("/users/:userId/likes", async (req, res) => {
 	}
 });
 
-app.post("/post", async (req, res) => {
+app.post("/posts/:postId", async (req, res) => {
 	let postId = req.body.postId;
 	const post = await db.getPost(postId);
 	res.status(200).json(
