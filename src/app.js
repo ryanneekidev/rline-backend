@@ -158,47 +158,6 @@ app.post("/posts", auth, async (req, res) => {
 	}
 });
 
-app.post("/refresh", (req, res) => {
-	const refreshToken = req.cookies.RLineRefreshToken;
-
-	if (!refreshToken) {
-		return res.status(400).json(
-			{
-				message: errorMessages.noRefreshToken,
-			}
-		);
-	}
-
-	jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-		if (err) {
-			return res.status(403).json({
-				message: errorMessages.invalidRefreshToken,
-			});
-		}
-
-		const accessToken = jwt.sign(
-			{
-				id: user.id,
-				username: user.username,
-				email: user.email,
-				joinedAt: user.joinedAt,
-				role: user.role
-			},
-			process.env.ACCESS_TOKEN_SECRET,
-			{
-				expiresIn: process.env.ACCESS_TOKEN_VALIDITY
-			}
-		);
-
-		res.status(200).json(
-			{
-				message: successMessages.refreshSucess + user.username,
-				token: accessToken
-			}
-		);
-  	});
-});
-
 app.post("/users/follow", auth, async (req, res) => {
 	try {
 		const followerId = req.user.id;

@@ -2,13 +2,13 @@ const { successMessages, errorMessages } = require("../../utils/messages.js");
 
 const isDev = process.env.NODE_ENV === "development";
 
-const loginService = require("../../services/authentication/authetication.service");
+const authenticationService = require("../../services/authentication/authentication.service.js");
 
 const login = async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
-    const result = await loginService.login(username, password);
+    const result = await authenticationService.login(username, password);
 
     if (result.success) {
         res.cookie(
@@ -17,14 +17,15 @@ const login = async (req, res) => {
             {
                 httpOnly: true,
                 sameSite: "None",
-                secure: isDev ? true : false,
-                domain: ".rline.ryanneeki.xyz",
+                secure: true,
+                domain: isDev ? ".localhost" : ".rline.ryanneeki.xyz",
                 path: "/",
                 maxAge: 24 * 60 * 60 * 1000
             }
         );
         res.status(200).json(
             {
+                success: result.success,
                 message: successMessages.loginSuccess + ` (${username})`,
                 token: result.accessToken,
                 likes: result.likes
@@ -33,6 +34,7 @@ const login = async (req, res) => {
     } else {
         res.status(400).json(
             {
+                success: result.success,
                 message: result.message
             }
         );
@@ -45,7 +47,7 @@ const register = async (req, res) => {
     const confirmedPassword = req.body.confirmedPassword;
     const email = req.body.email;
 
-    const result = await loginService.register(username, password, confirmedPassword, email);
+    const result = await authenticationService.register(username, password, confirmedPassword, email);
 
     if (result.pass) {
         res.status(201).json(
@@ -64,4 +66,29 @@ const register = async (req, res) => {
     }
 }
 
-module.exports = { login, register };
+const refresh = async (req, res) => {
+    const refreshToken = req.cookies.RLineRefreshToken;
+
+    const result = await authenticationService.refresh(refreshToken);
+    
+    console.log(result);
+
+    if (result.success) {
+        res.status(200).json(
+            {
+                success: result.success,
+                message: result.message,
+                token: result.accessToken
+            }
+        );
+    } else {
+        res.status(403).json(
+            {
+                success: result.success,
+                message: result.message
+            }
+        );
+    }
+}    
+
+module.exports = { login, register, refresh };

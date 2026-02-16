@@ -19,11 +19,8 @@ async function getUserByUsername(username) {
         })
     } catch (err) {
         if (err instanceof PrismaClient.PrismaClientKnownRequestError) {
-            res.status(400).json({
-                message: error.message,
-                code: error.code,
-                pass: false
-            })
+            console.error("Prisma error:", err);
+            return null;
         }
     }
 }
