@@ -1,4 +1,5 @@
 const notificationsService = require('../../services/notifications/notifications.service');
+const { addClient, removeClient } = require('../../utils/sseClients');
 
 const getNotifications = async (req, res) => {
     const userId = req.user.id;
@@ -35,8 +36,21 @@ const markAllAsRead = async (req, res) => {
     }
 };
 
+const streamNotifications = (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const userId = req.user.id;
+    addClient(userId, res);
+
+    req.on('close', () => removeClient(userId));
+};
+
 module.exports = {
     getNotifications,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    streamNotifications
 };

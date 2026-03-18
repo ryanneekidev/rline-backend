@@ -210,6 +210,7 @@ All routes are mounted with a prefix in `src/app.js`.
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/notifications` | Yes | Get all notifications for the authenticated user (newest first), includes actor username and post title |
+| GET | `/notifications/stream` | Yes | SSE stream — persistent connection, pushes new notifications in real time |
 | PATCH | `/notifications/read-all` | Yes | Mark all notifications as read |
 | PATCH | `/notifications/:notificationId/read` | Yes | Mark a single notification as read (ownership enforced — 403 if not yours) |
 
@@ -217,6 +218,8 @@ Notifications are created server-side as side effects of other actions — there
 - `likePost` → LIKE notification to post author
 - `createComment` → COMMENT notification to post author
 - `followUser` → FOLLOW notification to followed user
+
+The stream uses `fetch()` + `ReadableStream` on the frontend (not `EventSource`) so the standard `Authorization: Bearer <token>` header works. The typical flow is: open the stream on login for real-time pushes, and call `GET /notifications` once on page load to fetch the existing backlog.
 
 ### Users — `/users/*`
 
@@ -296,3 +299,4 @@ Built with `express-validator`. Each validator array includes sanitization (trim
 - **Cookie expiry**: the refresh token cookie uses `expires` (a `Date` object) as required by Express 5 / cookie package v0.7. The value is computed from `REFRESH_TOKEN_MAX_AGE` (milliseconds) at login time.
 - **Notification self-guard**: `notificationsService.createNotification` silently no-ops if `recipientId === actorId`. This means liking/commenting on your own post or following yourself (already blocked upstream) never creates a notification.
 - **Notification failures are non-fatal**: `createNotification` catches and logs its own errors without rethrowing — a failed notification never causes the parent action (like, comment, follow) to fail.
+- **SSE client store**: open SSE connections are tracked in an in-memory `Map` at `src/utils/sseClients.js` (userId → res). `createNotification` checks this map after saving to DB and writes directly to the open response if the recipient is connected. Entries are cleaned up via `req.on('close')`. This map is process-local — not suitable for multi-instance deployments without Redis pub/sub.
