@@ -11,6 +11,78 @@ All responses are JSON. Protected endpoints require a `Bearer <token>` in the `A
 
 ---
 
+## Frontend Specs
+
+The frontend lives in a separate repository at the frontend domain above. Stack: **Next.js**, **Tailwind CSS**, **shadcn/ui**.
+
+### Barebones Spec (Testing)
+
+Goal: verify every backend endpoint works end-to-end through a real UI. No styling polish required — functional is enough.
+
+**Auth**
+- Login page
+- Register page
+- Logout button
+- Silent token refresh
+
+**Feed**
+- Home page listing all posts with author, like count, comment count
+- Like / unlike a post inline
+
+**Posts**
+- Create post form
+- Post detail page with comments
+
+**Comments**
+- View comments on post detail page
+- Submit a comment
+
+**User Profile**
+- Profile page: username, join date, post count, follower/following counts
+- Follow / unfollow button
+
+**Notifications**
+- Notification list page
+- Mark single / all as read
+- Real-time SSE stream connected on login
+
+---
+
+### Full Product Spec
+
+Everything in the barebones spec, plus:
+
+**Auth**
+- Persistent login (auto-refresh on page reload)
+
+**Feed**
+- Pagination or infinite scroll
+- Filter by following (personal feed vs. global feed)
+
+**Posts**
+- Edit and delete own posts
+- Post status (NORMAL vs. ADMIN visibility)
+
+**Comments**
+- Edit and delete own comments
+
+**User Profile**
+- Followers / following lists viewable
+- All posts by that user listed on their profile
+- Own profile vs. another user's profile (different actions available)
+
+**Notifications**
+- Notification bell with unread count badge
+- Dropdown panel instead of separate page
+
+**UI/UX**
+- Polished, responsive design
+- Dark mode support
+- Loading states and error messages throughout
+- Empty states (no posts yet, no notifications, etc.)
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -217,6 +289,30 @@ Notifications are created server-side as side effects of other actions — there
 - `likePost` → LIKE notification to post author
 - `createComment` → COMMENT notification to post author
 - `followUser` → FOLLOW notification to followed user
+
+The stream uses `fetch()` + `ReadableStream` on the frontend (not `EventSource`) so the standard `Authorization: Bearer <token>` header works. The typical flow is: open the stream on login for real-time pushes, and call `GET /notifications` once on page load to fetch the existing backlog.
+
+**Why not `EventSource`**: the browser's built-in `EventSource` API does not support custom headers, making it impossible to pass the `Authorization: Bearer <token>` header. Passing the token as a query param was rejected as a security concern (tokens appear in server logs, browser history, proxy logs). The `fetch()` + `ReadableStream` approach gives full header control at the cost of manual reconnection logic on the frontend.
+
+**Frontend SSE pattern:**
+```js
+const response = await fetch(`${API_URL}/notifications/stream`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+});
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const text = decoder.decode(value);
+    // text arrives as "data: {...}\n\n" — parse accordingly
+    const json = JSON.parse(text.replace('data: ', '').trim());
+    // handle notification...
+}
+```
+
+On reconnect (connection dropped or token expired), call `POST /auth/refresh` first if the token has expired, then re-open the stream with the new token.
 
 ### Users — `/users/*`
 
