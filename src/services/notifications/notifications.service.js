@@ -1,9 +1,15 @@
 const notificationsRepository = require('../../repositories/notifications/notifications.repository');
+const { getClient } = require('../../utils/sseClients');
 
 const createNotification = async (recipientId, actorId, type, postId = null) => {
     if (recipientId === actorId) return;
     try {
-        await notificationsRepository.createNotification(recipientId, actorId, type, postId);
+        const notification = await notificationsRepository.createNotification(recipientId, actorId, type, postId);
+
+        const client = getClient(recipientId);
+        if (client) {
+            client.write(`data: ${JSON.stringify(notification)}\n\n`);
+        }
     } catch (error) {
         console.error("Error creating notification:", error);
     }
