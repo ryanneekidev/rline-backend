@@ -23,6 +23,8 @@ services:
     container_name: rline-backend
     ports:
       - "4000:4000"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/rline
       NODE_ENV: development

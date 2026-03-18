@@ -1,48 +1,26 @@
 const { successMessages, errorMessages } = require("../../utils/messages.js");
-const userRespository = require("../../repositories/user/user.repository.js");
+const userRepository = require("../../repositories/users/user.repository.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const login = async (username, password) => {
-	if (!username || !password) {
-		return (
-            {
-				success: false,
-                message: errorMessages.noUsernameOrPassword
-            }
-        )
-	}
-
-	if (username === "" || password === "") {
-		return (
-			{
-				success: false,
-				message: errorMessages.noUsernameOrPassword
-			}
-		)
-	}
-
-	const user = await userRespository.getUserByUsername(username);
+	const user = await userRepository.getUserByUsername(username);
 
 	if (!user) {
-		return (
-			{
-				success: false,
-				message: errorMessages.incorrectUsernameOrPassword
-			}
-		)
+		return {
+			success: false,
+			message: errorMessages.incorrectUsernameOrPassword
+		};
   	}
 
-	const likes = await userRespository.getUserLikedPosts(user.id);
-
 	if (!(await bcrypt.compare(password, user.password))) {
-		return (
-			{
-				success: false,
-				message: errorMessages.incorrectUsernameOrPassword
-			}
-		)
+		return {
+			success: false,
+			message: errorMessages.incorrectUsernameOrPassword
+		};
 	}
+
+	const likes = await userRepository.getUserLikedPosts(user.id);
 
   	const accessToken = jwt.sign(
 		{
@@ -82,34 +60,21 @@ const login = async (username, password) => {
 };
 
 const register = async (username, password, confirmedPassword, email) => {
-	const hashedPassword = await bcrypt.hash(password, 10);
-
-	if (!username || !password || !email) {
-		return (
-			{
-				message: errorMessages.noUsernameOrPasswordOrEmail,
-				pass: false
-			}
-		)
-	}
-
 	if (password !== confirmedPassword) {
-		return (
-			{
-				message: `Passwords do not match!`,
-				pass: false
-			}
-		);
+		return {
+			message: `Passwords do not match!`,
+			success: false
+		};
 	}
 
   	try {
-		let usernameExists = await userRespository.getUserByUsername(username);
-		let emailExists = await userRespository.getUserByEmail(email);
+		let usernameExists = await userRepository.getUserByUsername(username);
+		let emailExists = await userRepository.getUserByEmail(email);
 		if (usernameExists && emailExists) {
 			return (
 				{
 					message: `Username ${username} and email address ${email} are not available`,
-					pass: false
+					success: false
 				}
 			);
 		}
@@ -118,36 +83,30 @@ const register = async (username, password, confirmedPassword, email) => {
 			return (
 				{
 					message: `Username ${username} is not available`,
-					pass: false
+					success: false
 				}
 			);
 		}
 
 		if (emailExists) {
-			return (
-				{
-					message: `Email address ${email} is not available`,
-					pass: false
-				}
-			);
+			return {
+				message: `Email address ${email} is not available`,
+				success: false
+			};
 		}
 
-		await userRespository.createUser(username, email, hashedPassword);
+		const hashedPassword = await bcrypt.hash(password, 10);
+		await userRepository.createUser(username, email, hashedPassword);
 
 		return {
 			message: "User created successfully!",
-			pass: true
+			success: true
 		}
   	} catch (error) {
-		if (error instanceof Prisma.PrismaClientKnownRequestError) {
-			return (
-				{
-					message: error.message,
-					code: error.code,
-					pass: false
-				}
-			);
-		}
+		return {
+			message: error.message,
+			success: false
+		};
   	}
 };
 
@@ -181,7 +140,7 @@ const refresh = async (refreshToken) => {
 		return (
 			{
 				success: true,
-				message: successMessages.refreshSucess + user.username,
+				message: successMessages.refreshSuccess + user.username,
 				token: accessToken
 			}
 		);

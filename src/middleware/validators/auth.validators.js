@@ -1,0 +1,32 @@
+const { body } = require('express-validator');
+const validate = require('./validate');
+
+const loginValidators = [
+    body('username')
+        .trim()
+        .notEmpty().withMessage('Username is required'),
+    body('password')
+        .notEmpty().withMessage('Password is required'),
+    validate
+];
+
+const registerValidators = [
+    body('username')
+        .trim()
+        .notEmpty().withMessage('Username is required')
+        .isLength({ min: 3, max: 20 }).withMessage('Username must be between 3 and 20 characters')
+        .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username can only contain letters, numbers, and underscores'),
+    body('email')
+        .trim()
+        .notEmpty().withMessage('Email is required')
+        .isEmail().withMessage('Must be a valid email address')
+        .normalizeEmail(),
+    body('password')
+        .notEmpty().withMessage('Password is required')
+        .isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('confirmedPassword')
+        .notEmpty().withMessage('Please confirm your password'),
+    validate
+];
+
+module.exports = { loginValidators, registerValidators };

@@ -7,7 +7,7 @@ const errorMessages = {
 	incorrectUsername: "Incorrect username!",
 	incorrectPassword: "Incorrect password!",
 	incorrectUsernameOrPassword: "Incorrect username or password",
-	noAcessToken: "You are unauthorized to access this endpoint!",
+	noAccessToken: "You are unauthorized to access this endpoint!",
 	invalidAccessToken: "Your access token is invalid or has expired!",
 	noRefreshToken: "No refresh token provided!",
 	invalidRefreshToken: "Your refresh token is invalid or has expired!",
@@ -16,7 +16,7 @@ const errorMessages = {
 
 const successMessages = {
 	loginSuccess: "Successfully logged in!",
-	refreshSucess: "Successfully refreshed access token for user "
+	refreshSuccess: "Successfully refreshed access token for user "
 };
 
 module.exports = {errorMessages, successMessages}

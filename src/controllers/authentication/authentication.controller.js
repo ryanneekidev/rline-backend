@@ -1,5 +1,3 @@
-const { successMessages, errorMessages } = require("../../utils/messages.js");
-
 const isDev = process.env.NODE_ENV === "development";
 
 const authenticationService = require("../../services/authentication/authentication.service.js");
@@ -20,13 +18,13 @@ const login = async (req, res) => {
                 secure: true,
                 domain: isDev ? ".localhost" : ".rline.ryanneeki.xyz",
                 path: "/",
-                maxAge: 24 * 60 * 60 * 1000
+                expires: new Date(Date.now() + parseInt(process.env.REFRESH_TOKEN_MAX_AGE))
             }
         );
         res.status(200).json(
             {
                 success: result.success,
-                message: successMessages.loginSuccess + ` (${username})`,
+                message: result.message,
                 token: result.accessToken,
                 likes: result.likes
             }
@@ -49,17 +47,17 @@ const register = async (req, res) => {
 
     const result = await authenticationService.register(username, password, confirmedPassword, email);
 
-    if (result.pass) {
+    if (result.success) {
         res.status(201).json(
             {
-                pass: result.pass,
+                success: result.success,
                 message: result.message
             }
         );
     } else {
         res.status(400).json(
             {
-                pass: result.pass,
+                success: result.success,
                 message: result.message
             }
         )
@@ -67,18 +65,16 @@ const register = async (req, res) => {
 }
 
 const refresh = async (req, res) => {
-    const refreshToken = req.cookies.RLineRefreshToken;
+    const refreshToken = req.cookies[`${process.env.BRAND}RefreshToken`];
 
     const result = await authenticationService.refresh(refreshToken);
-    
-    console.log(result);
 
     if (result.success) {
         res.status(200).json(
             {
                 success: result.success,
                 message: result.message,
-                token: result.accessToken
+                token: result.token
             }
         );
     } else {
