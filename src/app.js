@@ -15,14 +15,14 @@ const allowedOrigin = isDev ? ["http://localhost:3000"] : ["https://rline.ryanne
 const app = express();
 
 app.use(
-	cors(
-		{
-			origin: allowedOrigin,
-			credentials: true,
-			methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-			allowedHeaders: ['Content-Type', 'Authorization']
-		}
-	)
+    cors(
+        {
+            origin: allowedOrigin,
+            credentials: true,
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+            allowedHeaders: ['Content-Type', 'Authorization']
+        }
+    )
 );
 app.use(cookieparser());
 app.use(express.json());
@@ -36,18 +36,18 @@ app.use("/users", usersRouter);
 app.use("/notifications", notificationsRouter);
 
 app.get("/", (req, res) => {
-	res.status(200).json(
-		{
-			message: process.env.WELCOME_MESSAGE
-		}
-	)
+    res.status(200).json(
+        {
+            message: process.env.WELCOME_MESSAGE
+        }
+    )
 });
 
 app.use((err, req, res, next) => {
-	console.error(err);
-	res.status(500).json({ success: false, message: "An unexpected error occurred" });
+    console.error(err);
+    res.status(500).json({ success: false, message: "An unexpected error occurred" });
 });
 
 app.listen(process.env.PORT || 4000, () => {
-	console.log(`Server started and listening for requests at ${PORT}`);
+    console.log(`Server started and listening for requests at ${PORT}`);
 });
