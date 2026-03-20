@@ -167,4 +167,55 @@ async function createPost(title, content, authorId, postStatus) {
     }
 }
 
-module.exports = { getAllPosts, getPostById, getExistingLike, likePost, dislikePost, createComment, createPost };
+async function updatePost(postId, title, content) {
+    try {
+        return await prisma.post.update({
+            where: { id: postId },
+            data: { title, content }
+        });
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+async function deletePost(postId) {
+    try {
+        await prisma.post.delete({ where: { id: postId } });
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+async function getCommentById(commentId) {
+    try {
+        return await prisma.comment.findUnique({ where: { id: commentId } });
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+async function updateComment(commentId, content) {
+    try {
+        return await prisma.comment.update({
+            where: { id: commentId },
+            data: { content }
+        });
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+async function deleteComment(commentId) {
+    try {
+        await prisma.comment.delete({ where: { id: commentId } });
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+module.exports = { getAllPosts, getPostById, getExistingLike, likePost, dislikePost, createComment, createPost, updatePost, deletePost, getCommentById, updateComment, deleteComment };

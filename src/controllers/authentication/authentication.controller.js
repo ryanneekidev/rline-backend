@@ -87,4 +87,18 @@ const refresh = async (req, res) => {
     }
 }    
 
-module.exports = { login, register, refresh };
+const logout = (req, res) => {
+    res.clearCookie(
+        `${process.env.BRAND}RefreshToken`,
+        {
+            httpOnly: true,
+            sameSite: "None",
+            secure: true,
+            domain: isDev ? ".localhost" : ".rline.ryanneeki.xyz",
+            path: "/"
+        }
+    );
+    res.status(200).json({ success: true, message: "Logged out successfully" });
+}
+
+module.exports = { login, register, refresh, logout };

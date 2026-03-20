@@ -135,4 +135,60 @@ const createPost = async (title, content, authorId, postStatus) => {
     }
 };
 
-module.exports = { getAllPosts, getPostById, likePost, dislikePost, createComment, createPost };
+const updatePost = async (postId, userId, title, content) => {
+    try {
+        const post = await postsRepository.getPostById(postId);
+        if (!post) return { success: false, notFound: true, message: "Post not found" };
+        if (post.authorId !== userId) return { success: false, unauthorized: true, message: "You do not own this post" };
+
+        const updated = await postsRepository.updatePost(postId, title, content);
+        return { success: true, post: updated };
+    } catch (error) {
+        console.error("Error updating post:", error);
+        return { success: false, message: "Failed to update post" };
+    }
+};
+
+const deletePost = async (postId, userId) => {
+    try {
+        const post = await postsRepository.getPostById(postId);
+        if (!post) return { success: false, notFound: true, message: "Post not found" };
+        if (post.authorId !== userId) return { success: false, unauthorized: true, message: "You do not own this post" };
+
+        await postsRepository.deletePost(postId);
+        return { success: true, message: "Post deleted successfully" };
+    } catch (error) {
+        console.error("Error deleting post:", error);
+        return { success: false, message: "Failed to delete post" };
+    }
+};
+
+const updateComment = async (postId, commentId, userId, content) => {
+    try {
+        const comment = await postsRepository.getCommentById(commentId);
+        if (!comment || comment.parentPostId !== postId) return { success: false, notFound: true, message: "Comment not found" };
+        if (comment.authorId !== userId) return { success: false, unauthorized: true, message: "You do not own this comment" };
+
+        const updated = await postsRepository.updateComment(commentId, content);
+        return { success: true, comment: updated };
+    } catch (error) {
+        console.error("Error updating comment:", error);
+        return { success: false, message: "Failed to update comment" };
+    }
+};
+
+const deleteComment = async (postId, commentId, userId) => {
+    try {
+        const comment = await postsRepository.getCommentById(commentId);
+        if (!comment || comment.parentPostId !== postId) return { success: false, notFound: true, message: "Comment not found" };
+        if (comment.authorId !== userId) return { success: false, unauthorized: true, message: "You do not own this comment" };
+
+        await postsRepository.deleteComment(commentId);
+        return { success: true, message: "Comment deleted successfully" };
+    } catch (error) {
+        console.error("Error deleting comment:", error);
+        return { success: false, message: "Failed to delete comment" };
+    }
+};
+
+module.exports = { getAllPosts, getPostById, likePost, dislikePost, createComment, createPost, updatePost, deletePost, updateComment, deleteComment };
