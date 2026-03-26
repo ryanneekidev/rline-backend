@@ -99,9 +99,9 @@ const createComment = async (req, res) => {
 }
 
 const createPost = async (req, res) => {
-    const { title, content, postStatus = "NORMAL" } = req.body;
+    const { title, content, postStatus = "NORMAL", mediaKey } = req.body;
     const userId = req.user.id;
-    const result = await postsService.createPost(title, content, userId, postStatus);
+    const result = await postsService.createPost(title, content, userId, postStatus, mediaKey);
     if (result.success) {
         res.status(201).json({
             success: true,

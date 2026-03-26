@@ -6,6 +6,7 @@ const authenticationRouter = require("./routers/authentication/authentication.ro
 const postsRouter = require("./routers/posts/posts.route.js");
 const usersRouter = require("./routers/users/users.route.js");
 const notificationsRouter = require("./routers/notifications/notifications.route.js");
+const uploadRouter = require("./routers/upload/upload.router.js")
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use("/auth", authenticationRouter);
 app.use("/posts", postsRouter);
 app.use("/users", usersRouter);
 app.use("/notifications", notificationsRouter);
+app.use("/upload", uploadRouter);
 
 app.get("/", (req, res) => {
     res.status(200).json(
