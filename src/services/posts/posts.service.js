@@ -119,9 +119,9 @@ const createComment = async (content, userId, postId) => {
     }
 };
 
-const createPost = async (title, content, authorId, postStatus) => {
+const createPost = async (title, content, authorId, postStatus, mediaKey) => {
     try {
-        await postsRepository.createPost(title, content, authorId, postStatus);
+        await postsRepository.createPost(title, content, authorId, postStatus, mediaKey);
         return {
             success: true,
             message: "Post created successfully"

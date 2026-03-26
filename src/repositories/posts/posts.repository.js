@@ -147,7 +147,7 @@ async function createComment(content, userId, postId) {
     }
 }
 
-async function createPost(title, content, authorId, postStatus) {
+async function createPost(title, content, authorId, postStatus, mediaKey) {
     try {
         await prisma.post.create({
             data: {
@@ -158,7 +158,8 @@ async function createPost(title, content, authorId, postStatus) {
                         id: authorId
                     }
                 },
-                postStatus: postStatus
+                postStatus: postStatus,
+                mediaKey: mediaKey
             }
         })
     } catch (err) {

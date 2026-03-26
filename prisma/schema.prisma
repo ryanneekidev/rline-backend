@@ -1,104 +1,105 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String    @id @default(uuid())
-  username  String    @unique
-  email     String    @unique
-  password  String
-  role      Role      @default(USER)
-  joinedAt  DateTime  @default(now())
-  posts     Post[]
-  comments  Comment[]
-  like      Like[]
-  followers             Follow[]       @relation("Following") // People who follow ME
-  following             Follow[]       @relation("Follower")  // People I follow
-  receivedNotifications Notification[] @relation("ReceivedNotifications")
-  sentNotifications     Notification[] @relation("SentNotifications")
+    id                    String         @id @default(uuid())
+    username              String         @unique
+    email                 String         @unique
+    password              String
+    role                  Role           @default(USER)
+    joinedAt              DateTime       @default(now())
+    posts                 Post[]
+    comments              Comment[]
+    like                  Like[]
+    followers             Follow[]       @relation("Following") // People who follow ME
+    following             Follow[]       @relation("Follower") // People I follow
+    receivedNotifications Notification[] @relation("ReceivedNotifications")
+    sentNotifications     Notification[] @relation("SentNotifications")
 }
 
 model Post {
-  id         String    @id @default(uuid())
-  title      String
-  content    String
-  createdAt  DateTime  @default(now())
-  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId   String
-  comments   Comment[]
-  postStatus    Status         @default(NORMAL)
-  likes         Int            @default(0)
-  like          Like[]
-  notifications Notification[]
+    id            String         @id @default(uuid())
+    title         String
+    content       String
+    mediaKey      String?
+    createdAt     DateTime       @default(now())
+    author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+    authorId      String
+    comments      Comment[]
+    postStatus    Status         @default(NORMAL)
+    likes         Int            @default(0)
+    like          Like[]
+    notifications Notification[]
 }
 
 model Comment {
-  id           String   @id @default(uuid())
-  content      String
-  createdAt    DateTime @default(now())
-  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId     String
-  parentPost   Post     @relation(fields: [parentPostId], references: [id], onDelete: Cascade)
-  parentPostId String
+    id           String   @id @default(uuid())
+    content      String
+    createdAt    DateTime @default(now())
+    author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+    authorId     String
+    parentPost   Post     @relation(fields: [parentPostId], references: [id], onDelete: Cascade)
+    parentPostId String
 }
 
 model Like {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
-  createdAt DateTime @default(now())
+    id        String   @id @default(uuid())
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId    String
+    post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+    postId    String
+    createdAt DateTime @default(now())
 
-  @@unique([userId, postId])
+    @@unique([userId, postId])
 }
 
 model Follow {
-  id          String   @id @default(uuid())
-  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
-  followerId  String
-  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
-  followingId String
-  createdAt   DateTime @default(now())
+    id          String   @id @default(uuid())
+    follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+    followerId  String
+    following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+    followingId String
+    createdAt   DateTime @default(now())
 
-  @@unique([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
+    @@unique([followerId, followingId])
+    @@index([followerId])
+    @@index([followingId])
 }
 
 model Notification {
-  id          String           @id @default(uuid())
-  recipient   User             @relation("ReceivedNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
-  recipientId String
-  actor       User             @relation("SentNotifications", fields: [actorId], references: [id], onDelete: Cascade)
-  actorId     String
-  type        NotificationType
-  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId      String?
-  read        Boolean          @default(false)
-  createdAt   DateTime         @default(now())
+    id          String           @id @default(uuid())
+    recipient   User             @relation("ReceivedNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+    recipientId String
+    actor       User             @relation("SentNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+    actorId     String
+    type        NotificationType
+    post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+    postId      String?
+    read        Boolean          @default(false)
+    createdAt   DateTime         @default(now())
 
-  @@index([recipientId])
+    @@index([recipientId])
 }
 
 enum Role {
-  USER
-  ADMIN
-  OWNER
+    USER
+    ADMIN
+    OWNER
 }
 
 enum Status {
-  NORMAL
-  ADMIN
+    NORMAL
+    ADMIN
 }
 
 enum NotificationType {
-  LIKE
-  COMMENT
-  FOLLOW
+    LIKE
+    COMMENT
+    FOLLOW
 }
