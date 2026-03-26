@@ -97,6 +97,7 @@ Everything in the barebones spec, plus:
 | Rate limiting | `express-rate-limit` |
 | Dev server | `nodemon` |
 | Config | `dotenv` |
+| Media storage | AWS S3 (`@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`) |
 | Other | `cors`, `cookie-parser` |
 
 ---
@@ -116,6 +117,10 @@ REFRESH_TOKEN_VALIDITY=        # e.g. "7d"
 REFRESH_TOKEN_MAX_AGE=         # Refresh cookie lifetime in milliseconds (e.g. 604800000 for 7 days) — must match REFRESH_TOKEN_VALIDITY. Used to calculate the cookie expires date.
 BRAND=RLine                    # Used as cookie name prefix: ${BRAND}RefreshToken
 WELCOME_MESSAGE=               # Returned by GET /
+AWS_REGION=                    # e.g. "ap-southeast-2" — S3 bucket region
+AWS_ACCESS_KEY_ID=             # IAM credentials for S3 presigned URL generation
+AWS_SECRET_ACCESS_KEY=         # IAM credentials for S3 presigned URL generation
+S3_BUCKET_NAME=                # S3 bucket where post media is stored
 ```
 
 ---
@@ -141,11 +146,13 @@ docker-compose down         # stop all services
 
 The `docker-compose.yml` runs PostgreSQL and the backend together. The backend loads all env vars from `.env` via `env_file`, with `DATABASE_URL` and `NODE_ENV` overridden inline to point at the containerised database. Always rebuild the image (`--build` or `--no-cache`) after installing new packages.
 
+> **Note**: The `Dockerfile` has a stale `EXPOSE 3001` line — the server actually listens on `PORT` (default `4000`), matching the `4000:4000` port mapping in `docker-compose.yml`. This discrepancy is cosmetic only.
+
 ---
 
 ## Architecture: Service-Controller-Repository (SCR) Pattern
 
-The codebase follows a fully layered SCR pattern. Each domain has four files: a router, a controller, a service, and a repository.
+The codebase follows a fully layered SCR pattern. Each domain has four files: a router, a controller, a service, and a repository. The **upload** domain is the sole exception — it has no repository layer because it talks to AWS S3 rather than the database.
 
 ```
 src/
@@ -159,22 +166,27 @@ src/
 │       ├── auth.validators.js      # Validation + sanitization chains for login and register
 │       └── posts.validators.js     # Validation + sanitization chains for createPost and createComment
 ├── utils/
-│   └── messages.js                 # Centralized error/success message strings
+│   ├── messages.js                 # Centralized error/success message strings (used by auth layer)
+│   ├── sseClients.js               # In-memory Map of open SSE connections (userId → res)
+│   └── s3.js                       # Shared AWS S3Client singleton
 ├── routers/
 │   ├── authentication/authentication.route.js
 │   ├── posts/posts.route.js
 │   ├── users/users.route.js
-│   └── notifications/notifications.route.js
+│   ├── notifications/notifications.route.js
+│   └── upload/upload.router.js
 ├── controllers/
 │   ├── authentication/authentication.controller.js
 │   ├── posts/posts.controller.js
 │   ├── users/users.controller.js
-│   └── notifications/notifications.controller.js
+│   ├── notifications/notifications.controller.js
+│   └── upload/upload.controller.js
 ├── services/
 │   ├── authentication/authentication.service.js
 │   ├── posts/posts.service.js
 │   ├── users/users.service.js
-│   └── notifications/notifications.service.js
+│   ├── notifications/notifications.service.js
+│   └── upload/upload.service.js    # Generates S3 presigned PUT URL — no repository layer
 └── repositories/
     ├── posts/posts.repository.js
     ├── users/user.repository.js
@@ -205,9 +217,10 @@ Located at `prisma/schema.prisma`. Database: PostgreSQL.
 - Relations: `posts[]`, `comments[]`, `like[]`, `followers[]`, `following[]`
 
 **Post**
-- `id` (UUID), `title`, `content`, `createdAt`, `authorId` (→ User), `postStatus` (enum), `likes` (int count)
+- `id` (UUID), `title`, `content`, `mediaKey` (optional String — S3 object key), `createdAt`, `authorId` (→ User), `postStatus` (enum), `likes` (int count)
 - Relations: `comments[]`, `like[]`
 - `Post.likes` is kept in sync via `prisma.$transaction` whenever a like is created or deleted
+- `mediaKey` is set at creation time if the client uploaded an image via the presign flow; `null` otherwise
 
 **Comment**
 - `id` (UUID), `content`, `createdAt`, `authorId` (→ User), `parentPostId` (→ Post)
@@ -262,20 +275,28 @@ All routes are mounted with a prefix in `src/app.js`.
 | POST | `/auth/login` | No | 10 / 15 min | Login; returns access token + likes array, sets refresh cookie |
 | POST | `/auth/register` | No | 5 / hour | Register new user |
 | POST | `/auth/refresh` | Cookie | 30 / 15 min | Exchange refresh token for new access token |
+| POST | `/auth/logout` | No | — | Clears the refresh token cookie |
 
 **Login response** includes `token` (access JWT) and `likes` (array of user's Like records).
 **Refresh token** is stored in an HTTP-only cookie named `${BRAND}RefreshToken` (e.g. `RLineRefreshToken`).
+**Logout** does not require a token — it simply clears the cookie client-side via `res.clearCookie()`.
 
 ### Posts — `/posts/*`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/posts/all` | No | Get all posts (newest first), includes author and comments with authors |
-| GET | `/posts/:postId` | No | Get single post by ID, includes author and comments with authors |
+| GET | `/posts/all` | No | Get all posts (newest first), includes author (`id`, `username`) and comments with authors |
+| GET | `/posts/:postId` | No | Get single post by ID, includes author (`id`, `username`, `email`) and comments with authors |
 | POST | `/posts/:postId/like` | Yes | Like a post |
 | POST | `/posts/:postId/dislike` | Yes | Remove the authenticated user's like from a post — no body required |
 | POST | `/posts/:postId/comments/new` | Yes | Create a comment; body: `{ content }` |
-| POST | `/posts/new` | Yes | Create a post; body: `{ title, content, postStatus? }` |
+| PATCH | `/posts/:postId/comments/:commentId` | Yes | Edit own comment; body: `{ content }` — 403 if not author |
+| DELETE | `/posts/:postId/comments/:commentId` | Yes | Delete own comment — 403 if not author |
+| POST | `/posts/new` | Yes | Create a post; body: `{ title, content, postStatus?, mediaKey? }` |
+| PATCH | `/posts/:postId` | Yes | Edit own post; body: `{ title, content }` — 403 if not author |
+| DELETE | `/posts/:postId` | Yes | Delete own post — 403 if not author |
+
+> **Route ordering note**: `POST /posts/new` is defined before `GET /posts/:postId` in the router, so Express never tries to match the literal string `"new"` as a postId.
 
 ### Notifications — `/notifications/*`
 
@@ -315,6 +336,20 @@ while (true) {
 
 On reconnect (connection dropped or token expired), call `POST /auth/refresh` first if the token has expired, then re-open the stream with the new token.
 
+### Upload — `/upload/*`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/upload/presign` | Yes | Generate a UUID-based S3 key and a presigned PUT URL; returns `{ success, key, presignedUrl }` |
+
+**Media upload flow (client-driven):**
+1. Client calls `POST /upload/presign` → receives `{ key, presignedUrl }`.
+2. Client PUTs the image file directly to the presigned URL (direct browser → S3, no server involvement).
+3. Client includes `mediaKey: key` in the body of `POST /posts/new`.
+4. Server stores the key on the `Post` record; the client constructs the public S3 URL for display.
+
+The presigned URL expires in **240 seconds** (4 minutes). Keys are generated as `<UUID>.jpg` — the content type is hardcoded to `image/jpeg`.
+
 ### Users — `/users/*`
 
 | Method | Path | Auth | Description |
@@ -328,6 +363,8 @@ On reconnect (connection dropped or token expired), call `POST /auth/refresh` fi
 | GET | `/users/:userId/posts/count` | No | Get number of posts by user |
 | POST | `/users/follow` | Yes | Follow a user; body: `{ followingId }` |
 | POST | `/users/unfollow` | Yes | Unfollow a user; body: `{ followingId }` |
+
+**Response shape note**: several users endpoints return data directly rather than wrapped in `{ success, data }` — `getFollowers` and `getFollowing` return a bare array, `getUserLikes` returns a bare array, `countUserPosts` returns a bare number, and `isFollowing` returns a bare boolean. This is inconsistent with the rest of the API but is intentional/established behaviour.
 
 ---
 
@@ -394,3 +431,6 @@ Built with `express-validator`. Each validator array includes sanitization (trim
 - **Notification self-guard**: `notificationsService.createNotification` silently no-ops if `recipientId === actorId`. This means liking/commenting on your own post or following yourself (already blocked upstream) never creates a notification.
 - **Notification failures are non-fatal**: `createNotification` catches and logs its own errors without rethrowing — a failed notification never causes the parent action (like, comment, follow) to fail.
 - **SSE client store**: open SSE connections are tracked in an in-memory `Map` at `src/utils/sseClients.js` (userId → res). `createNotification` checks this map after saving to DB and writes directly to the open response if the recipient is connected. Entries are cleaned up via `req.on('close')`. This map is process-local — not suitable for multi-instance deployments without Redis pub/sub.
+- **Cookie domain**: in development the refresh cookie is set on `.localhost`; in production on `.rline.ryanneeki.xyz`. The leading dot makes the cookie available to all subdomains (e.g. both `rline.ryanneeki.xyz` and `api.rline.ryanneeki.xyz`). `sameSite: "None"` + `secure: true` are required for cross-origin cookie sharing between the frontend and API subdomains.
+- **S3 singleton**: `src/utils/s3.js` exports a single `S3Client` instance initialised from env vars. The upload service imports this rather than creating its own client.
+- **Upload controller bug (cosmetic)**: `upload.controller.js` has a stray `module.exports = { generateKey }` inside the `generateKey` function body (line 11). It is harmless because the correct export at line 14 (outside the function) takes precedence after the module loads, but it re-assigns `module.exports` on every request call.
